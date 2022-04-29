@@ -12,8 +12,9 @@ class PrimaryButtonSP extends StatelessWidget {
   Color? color;
   HeroIcons? icon;
   String? text;
+  double? price;
   IconAlignment? iconAlignment;
-  bool disable;
+  PrimaryButtonType? buttonType;
   bool loading;
   VoidCallback? onPressed;
 
@@ -22,50 +23,97 @@ class PrimaryButtonSP extends StatelessWidget {
       this.height = 98,
       this.width = 656,
       this.text = '',
+      this.price,
       this.loading = false,
       this.onPressed,
+      this.buttonType = PrimaryButtonType.Main,
       this.icon,
       this.iconAlignment,
-      this.disable = false,
       this.color = ThemeColors.orange500})
       : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    List<Widget> children = [Text(text!)];
+    OutlinedBorder shape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(24),
+    );
+    Color borderColor = color!;
+    List<Widget> children = [
+      Text(
+        text!,
+        style: TextStyle(color: getTextColor()),
+      ),
+      if (price != null)
+        Text(
+          '  ${price!.toStringAsFixed(0)} ₸',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: getTextColor(),
+          ),
+        )
+    ];
     Color disableColor = ThemeColors.transparent;
-    if (disable) {
+    if (buttonType == PrimaryButtonType.Disabled) {
       disableColor = ThemeColors.gray500.withOpacity(0.5);
     }
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
-      child: ColorFiltered(
-        colorFilter: ColorFilter.mode(
-          disableColor,
-          BlendMode.multiply,
-        ),
-        child: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            fixedSize: Size(width!, height!),
-            primary: color,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(24),
+    if (buttonType == PrimaryButtonType.Ghost) {
+      color = ThemeColors.transparent;
+    }
+    Widget primary() {
+      if (buttonType == PrimaryButtonType.Ghost) {
+        return OutlinedButton(
+            style: OutlinedButton.styleFrom(
+              shape: shape,
+              primary: ThemeColors.coolgray300,
+              fixedSize: Size(width!, height!),
+            ),
+            onPressed: getOnPressed,
+            child: getChild(children));
+      } else {
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: ColorFiltered(
+            colorFilter: ColorFilter.mode(
+              disableColor,
+              BlendMode.multiply,
+            ),
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                fixedSize: Size(width!, height!),
+                padding: const EdgeInsets.symmetric(vertical: 23),
+                primary: color,
+                shape: shape,
+              ),
+              onPressed: getOnPressed,
+              child: getChild(children),
             ),
           ),
-          onPressed: getOnPressed,
-          child: getChild(children),
-        ),
-      ),
-    );
+        );
+      }
+    }
+
+    return primary();
   }
 
   VoidCallback? getOnPressed() {
-    if (disable) {
+    if (buttonType == PrimaryButtonType.Disabled) {
       return null;
     } else if (loading) {
       return null;
     } else {
       return onPressed;
+    }
+  }
+
+  Color? getTextColor() {
+    if (buttonType == PrimaryButtonType.Main) {
+      return ThemeColors.white;
+    } else if (buttonType == PrimaryButtonType.Secondary) {
+      return ThemeColors.orange500;
+    } else if (buttonType == PrimaryButtonType.Ghost) {
+      return ThemeColors.coolgray500;
+    } else {
+      return ThemeColors.white;
     }
   }
 
@@ -83,13 +131,10 @@ class PrimaryButtonSP extends StatelessWidget {
     if (loading) {
       children.add(LoadingWidget());
     }
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 23),
-      child: SpacedRow(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: children,
-      ),
+    return SpacedRow(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: children,
     );
   }
 
@@ -104,13 +149,11 @@ Widget primaryButtonSPStory() {
     children: [
       PrimaryButtonSP(
         height: 70,
-        // width: 250,
         text: 'Primary button SP L',
         onPressed: () {},
       ),
       PrimaryButtonSP(
         height: 70,
-        // width: 250,
         text: 'Primary button SP L',
         icon: HeroIcons.shoppingCart,
         iconAlignment: IconAlignment.right,
@@ -118,7 +161,6 @@ Widget primaryButtonSPStory() {
       ),
       PrimaryButtonSP(
         height: 70,
-        // width: 250,
         text: 'Primary button SP L',
         icon: HeroIcons.shoppingCart,
         iconAlignment: IconAlignment.left,
@@ -126,17 +168,28 @@ Widget primaryButtonSPStory() {
       ),
       PrimaryButtonSP(
         height: 70,
-        // width: 250,
         text: 'Primary button SP L disabled',
         iconAlignment: IconAlignment.left,
-        disable: true,
         color: ThemeColors.orange500,
+        buttonType: PrimaryButtonType.Disabled,
         onPressed: () {},
       ),
       PrimaryButtonSP(
         height: 70,
         loading: true,
-      )
+      ),
+      PrimaryButtonSP(
+        height: 70,
+        text: 'Secondary button',
+        color: ThemeColors.orange200,
+        price: 10000,
+        buttonType: PrimaryButtonType.Secondary,
+      ),
+      PrimaryButtonSP(
+        height: 70,
+        text: 'Ghost button SP',
+        buttonType: PrimaryButtonType.Ghost,
+      ),
     ],
   );
 }
@@ -145,6 +198,7 @@ enum IconAlignment {
   left,
   right,
 }
+enum PrimaryButtonType { Main, Secondary, Ghost, Disabled, Link, Extra, Sale }
 
 class LoadingWidget extends StatefulWidget {
   Color iconColor;
@@ -159,7 +213,7 @@ class LoadingWidget extends StatefulWidget {
 class _LoadingWidgetState extends State<LoadingWidget>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller =
-      AnimationController(vsync: this, duration: Duration(seconds: 2))
+      AnimationController(vsync: this, duration: const Duration(seconds: 2))
         ..repeat();
 
   @override
@@ -176,7 +230,7 @@ class _LoadingWidgetState extends State<LoadingWidget>
         angle: _controller.value * 2 * pi,
         child: child,
       ),
-      child: HeroIcon(
+      child: const HeroIcon(
         HeroIcons.loading,
         color: ThemeColors.white,
       ),
